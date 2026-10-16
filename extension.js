@@ -15,6 +15,7 @@ const HIBERNATE_AUTH_NOTE = 'Changing this delay requires administrator authoriz
 export default class SandmanExtension extends Extension {
     enable() {
         this._handlers = [];
+        this._syncingSwitch = false;
         this._settings = this.getSettings();
         this._gnome = new GnomeSettings();
         this._sleep = new SleepService({settings: this._settings, gnome: this._gnome});
@@ -62,6 +63,7 @@ export default class SandmanExtension extends Extension {
         for (const [emitter, id] of this._handlers ?? [])
             emitter.disconnect(id);
         this._handlers = [];
+        this._syncingSwitch = false;
 
         this._indicator?.destroy();
         this._indicator = null;
@@ -102,15 +104,20 @@ export default class SandmanExtension extends Extension {
     // service queues them; each outcome re-renders from the stored key, which
     // only changes when the helper succeeded.
     _bindHibernate() {
+        const hibernate = this._hibernate;
         this._syncHibernate();
         this._connect(this._indicator.hibernateSection, 'value-selected', (_section, {value}) => {
-            this._hibernate.setDelay(value)
+            hibernate.setDelay(value)
                 .then(() => {
-                    this._indicator?.setError(null);
+                    if (this._hibernate !== hibernate)
+                        return;
+                    this._indicator.setError(null);
                     this._syncHibernate();
                 })
                 .catch(e => {
-                    this._indicator?.setError(e.message);
+                    if (this._hibernate !== hibernate)
+                        return;
+                    this._indicator.setError(e.message);
                     this._syncHibernate();
                 });
         });
@@ -124,15 +131,21 @@ export default class SandmanExtension extends Extension {
     _syncHibernate() {
         if (!this._indicator)
             return;
-        const {available, diagnosis} = this._hibernate;
+        const {ready, available, diagnosis} = this._hibernate;
         const delay = this._hibernate.getDelay();
         const section = this._indicator.hibernateSection;
         // Custom first: setValue opens the custom row only while enabled.
         section.setCustomEnabled(available);
-        for (const v of hibernatePresets)
-            section.setItemSensitive(v, available || v === 0);
+        // Until logind has answered, availability is unknown: presets keep
+        // their sensitivity and no note is shown.
+        if (ready) {
+            for (const v of hibernatePresets)
+                section.setItemSensitive(v, available || v === 0);
+        }
         section.setValue(delay);
-        if (!available)
+        if (!ready)
+            section.setNote(null);
+        else if (!available)
             section.setNote(HIBERNATE_UNAVAILABLE + diagnosis);
         else
             section.setNote(delay > 0 ? HIBERNATE_AUTH_NOTE : null);
@@ -142,15 +155,20 @@ export default class SandmanExtension extends Extension {
     // The section stays hidden until the service finds a lid. Hibernate is
     // pickable only when logind can hibernate.
     _bindLid() {
+        const lid = this._lid;
         this._syncLid();
         this._connect(this._indicator.lidSection, 'value-selected', (_section, {value}) => {
-            this._lid.setAction(value)
+            lid.setAction(value)
                 .then(() => {
-                    this._indicator?.setError(null);
+                    if (this._lid !== lid)
+                        return;
+                    this._indicator.setError(null);
                     this._syncLid();
                 })
                 .catch(e => {
-                    this._indicator?.setError(e.message);
+                    if (this._lid !== lid)
+                        return;
+                    this._indicator.setError(e.message);
                     this._syncLid();
                 });
         });
@@ -175,14 +193,20 @@ export default class SandmanExtension extends Extension {
         this._setSwitch(this._keepAwake.active);
         this._indicator.setKeepAwakeBadge(this._keepAwake.active);
 
+        const keepAwake = this._keepAwake;
         this._connect(this._indicator.keepAwakeSwitch, 'toggled', (_item, state) => {
             if (this._syncingSwitch)
                 return;
-            this._keepAwake.setActive(state)
-                .then(() => this._indicator?.setError(null))
+            keepAwake.setActive(state)
+                .then(() => {
+                    if (this._keepAwake === keepAwake)
+                        this._indicator.setError(null);
+                })
                 .catch(e => {
-                    this._indicator?.setError(e.message);
-                    this._setSwitch(this._keepAwake?.active ?? false);
+                    if (this._keepAwake !== keepAwake)
+                        return;
+                    this._indicator.setError(e.message);
+                    this._setSwitch(keepAwake.active);
                 });
         });
         this._connect(this._keepAwake, 'changed', () => {
