@@ -4,12 +4,15 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {GnomeSettings} from './lib/gnomeSettings.js';
 import {Indicator} from './lib/indicator.js';
 import {KeepAwake} from './lib/keepAwake.js';
+import {SleepService} from './lib/sleepService.js';
 
 export default class SandmanExtension extends Extension {
     enable() {
         this._handlers = [];
         this._settings = this.getSettings();
         this._gnome = new GnomeSettings();
+        this._sleep = new SleepService({settings: this._settings, gnome: this._gnome});
+        this._sleep.enable();
         this._keepAwake = new KeepAwake(this._settings);
 
         this._indicator = new Indicator({path: this.path});
@@ -22,6 +25,15 @@ export default class SandmanExtension extends Extension {
             () => this._gnome.getLock(),
             value => this._gnome.setLock(value));
         this._connect(this._gnome, 'changed', () => this._syncGnome());
+        this._bindTimer(this._indicator.sleepBatterySection,
+            () => this._sleep.getTimeout('battery'),
+            seconds => this._sleep.setTimeout('battery', seconds));
+        this._bindTimer(this._indicator.sleepAcSection,
+            () => this._sleep.getTimeout('ac'),
+            seconds => this._sleep.setTimeout('ac', seconds));
+        this._connect(this._sleep, 'changed', () => this._syncSleep());
+        this._connect(this._sleep, 'error', (_sleep, message) =>
+            this._indicator.setError(message));
         this._refreshWarnings();
 
         this._bindKeepAwake();
@@ -40,6 +52,8 @@ export default class SandmanExtension extends Extension {
         this._indicator = null;
         this._keepAwake?.destroy();
         this._keepAwake = null;
+        this._sleep?.disable();
+        this._sleep = null;
         this._gnome?.destroy();
         this._gnome = null;
         this._settings = null;
@@ -101,6 +115,12 @@ export default class SandmanExtension extends Extension {
     _syncGnome() {
         this._indicator.screenOffSection.setValue(this._gnome.getScreenOff());
         this._indicator.lockSection.setValue(this._gnome.getLock());
+        this._refreshWarnings();
+    }
+
+    _syncSleep() {
+        this._indicator.sleepBatterySection.setValue(this._sleep.getTimeout('battery'));
+        this._indicator.sleepAcSection.setValue(this._sleep.getTimeout('ac'));
         this._refreshWarnings();
     }
 
