@@ -5,3 +5,9 @@
 .sandman-custom-entry {
     width: 6em;
 }
+
+.sandman-badge {
+    font-size: 0.6em;
+    color: #33d17a;
+    margin-left: 2px;
+}
