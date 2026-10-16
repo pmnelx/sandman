@@ -66,22 +66,36 @@ export default class SandmanExtension extends Extension {
     }
 
     _bindKeepAwake() {
-        const item = this._indicator.keepAwakeSwitch;
-        item.setToggleState(this._keepAwake.active);
+        this._setSwitch(this._keepAwake.active);
         this._indicator.setKeepAwakeBadge(this._keepAwake.active);
 
-        this._connect(item, 'toggled', (_item, state) => {
+        this._connect(this._indicator.keepAwakeSwitch, 'toggled', (_item, state) => {
+            if (this._syncingSwitch)
+                return;
             this._keepAwake.setActive(state)
                 .then(() => this._indicator?.setError(null))
                 .catch(e => {
                     this._indicator?.setError(e.message);
-                    this._indicator?.keepAwakeSwitch.setToggleState(this._keepAwake?.active ?? false);
+                    this._setSwitch(this._keepAwake?.active ?? false);
                 });
         });
         this._connect(this._keepAwake, 'changed', () => {
-            item.setToggleState(this._keepAwake.active);
+            this._setSwitch(this._keepAwake.active);
             this._indicator.setKeepAwakeBadge(this._keepAwake.active);
         });
+    }
+
+    // setToggleState emits "toggled"; the guard keeps programmatic updates
+    // from re-entering the toggled handler as if the user had clicked.
+    _setSwitch(state) {
+        if (!this._indicator)
+            return;
+        this._syncingSwitch = true;
+        try {
+            this._indicator.keepAwakeSwitch.setToggleState(state);
+        } finally {
+            this._syncingSwitch = false;
+        }
     }
 
     _syncGnome() {
