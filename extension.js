@@ -13,50 +13,62 @@ const HIBERNATE_UNAVAILABLE = 'Suspend then hibernate is not available on this c
 const HIBERNATE_AUTH_NOTE = 'Changing this delay requires administrator authorization.';
 
 export default class SandmanExtension extends Extension {
+    // GNOME Shell marks the extension as errored and never calls disable()
+    // when enable() throws, so a failure rolls back here. The sleep service
+    // goes last: it is the only step that changes GNOME settings, and by then
+    // the menu that shows and undoes the change already exists.
     enable() {
-        this._handlers = [];
-        this._syncingSwitch = false;
-        this._settings = this.getSettings();
-        this._gnome = new GnomeSettings();
-        this._sleep = new SleepService({settings: this._settings, gnome: this._gnome});
-        this._sleep.enable();
-        this._hibernate = new HibernateService(this._settings);
-        this._keepAwake = new KeepAwake(this._settings);
-        this._lid = new LidService({
-            settings: this._settings,
-            keepAwake: this._keepAwake,
-            hibernate: this._hibernate,
-        });
+        try {
+            this._handlers = [];
+            this._syncingSwitch = false;
+            this._settings = this.getSettings();
+            this._gnome = new GnomeSettings();
+            this._sleep = new SleepService({settings: this._settings, gnome: this._gnome});
+            this._hibernate = new HibernateService(this._settings);
+            this._keepAwake = new KeepAwake(this._settings);
+            this._lid = new LidService({
+                settings: this._settings,
+                keepAwake: this._keepAwake,
+                hibernate: this._hibernate,
+            });
 
-        this._indicator = new Indicator({path: this.path});
-        Main.panel.addToStatusArea(this.uuid, this._indicator);
+            this._indicator = new Indicator({path: this.path});
+            Main.panel.addToStatusArea(this.uuid, this._indicator);
 
-        this._bindTimer(this._indicator.screenOffSection,
-            () => this._gnome.getScreenOff(),
-            seconds => this._gnome.setScreenOff(seconds));
-        this._bindTimer(this._indicator.lockSection,
-            () => this._gnome.getLock(),
-            value => this._gnome.setLock(value));
-        this._connect(this._gnome, 'changed', () => this._syncGnome());
-        this._bindTimer(this._indicator.sleepBatterySection,
-            () => this._sleep.getTimeout('battery'),
-            seconds => this._sleep.setTimeout('battery', seconds));
-        this._bindTimer(this._indicator.sleepAcSection,
-            () => this._sleep.getTimeout('ac'),
-            seconds => this._sleep.setTimeout('ac', seconds));
-        this._connect(this._sleep, 'changed', () => this._syncSleep());
-        this._connect(this._sleep, 'error', (_sleep, message) =>
-            this._indicator.setError(message));
-        this._bindHibernate();
-        this._refreshWarnings();
+            this._bindTimer(this._indicator.screenOffSection,
+                () => this._gnome.getScreenOff(),
+                seconds => this._gnome.setScreenOff(seconds));
+            this._bindTimer(this._indicator.lockSection,
+                () => this._gnome.getLock(),
+                value => this._gnome.setLock(value));
+            this._connect(this._gnome, 'changed', () => this._syncGnome());
+            this._bindTimer(this._indicator.sleepBatterySection,
+                () => this._sleep.getTimeout('battery'),
+                seconds => this._sleep.setTimeout('battery', seconds));
+            this._bindTimer(this._indicator.sleepAcSection,
+                () => this._sleep.getTimeout('ac'),
+                seconds => this._sleep.setTimeout('ac', seconds));
+            this._connect(this._sleep, 'changed', () => this._syncSleep());
+            this._connect(this._sleep, 'error', (_sleep, message) =>
+                this._indicator.setError(message));
+            this._bindHibernate();
+            this._refreshWarnings();
 
-        this._bindKeepAwake();
-        this._keepAwake.restore();
+            this._bindKeepAwake();
+            this._keepAwake.restore();
 
-        this._bindLid();
+            this._bindLid();
 
-        this._updateVisibility();
-        this._connect(Main.sessionMode, 'updated', () => this._updateVisibility());
+            this._updateVisibility();
+            this._connect(Main.sessionMode, 'updated', () => this._updateVisibility());
+
+            // Emits "changed" once enabled, so the sleep rows show any
+            // timeout it adopted.
+            this._sleep.enable();
+        } catch (e) {
+            this.disable();
+            throw e;
+        }
     }
 
     disable() {
@@ -122,8 +134,6 @@ export default class SandmanExtension extends Extension {
                 });
         });
         this._connect(this._hibernate, 'changed', () => this._syncHibernate());
-        this._connect(this._hibernate, 'error', (_hibernate, message) =>
-            this._indicator.setError(message));
         this._hibernate.enable().catch(e =>
             console.warn(`Sandman: could not check hibernation support: ${e.message}`));
     }

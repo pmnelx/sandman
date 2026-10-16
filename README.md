@@ -45,9 +45,9 @@ delay then asks for administrator authorization.
 
 ## How sleep and hibernate work
 
-Sleep is Sandman's own idle timer. While the extension is enabled, GNOME's Automatic Suspend (`sleep-inactive-ac-type` and `sleep-inactive-battery-type`) is set to `nothing`. Sandman saves the previous values and restores them when you disable the extension.
+Sleep is Sandman's own idle timer. While the extension is enabled, GNOME's Automatic Suspend (`sleep-inactive-ac-type` and `sleep-inactive-battery-type`) is set to `nothing`. Sandman saves the previous values and restores them when you disable the extension. Disable the extension before uninstalling it, so GNOME's Automatic Suspend settings are restored.
 
-On first enable, Sandman adopts your existing Automatic Suspend timeouts, but only where GNOME would have suspended. Enabling it changes nothing by itself. If you later turn Automatic Suspend on in Settings, Sandman adopts that value and takes over again.
+On first enable, Sandman adopts your existing Automatic Suspend timeouts, but only where GNOME would have suspended. Enabling it changes nothing by itself. If you later turn Automatic Suspend on in Settings, Sandman adopts that value and takes over again. This also applies while the extension is disabled: if you change Automatic Suspend in Settings and it is on when you enable Sandman again, Sandman adopts that timeout.
 
 Sleep respects application inhibitors:
 
@@ -68,6 +68,7 @@ For any action other than System default, Sandman holds a logind `handle-lid-swi
 - **System default** leaves logind.conf in charge.
 - **Display off** turns the built-in panel off when no external monitor is attached. With one attached, GNOME already does this.
 - **Sleep** and **Hibernate** act even when docked, because you chose them explicitly. Use Do nothing or Display off for clamshell use.
+- **Sleep** follows the same rule as the sleep timer: suspend then hibernate when Hibernate after sleep is set, but plain suspend while a removable GPU is attached.
 - **Keep awake** suppresses Sandman's Sleep and Hibernate lid actions. It does not affect System default, because logind ignores session inhibitors on lid close.
 - With System default selected, GNOME itself blocks lid-close suspend while an external monitor is attached.
 
@@ -83,7 +84,7 @@ Hibernate after sleep is available only when logind reports `CanSuspendThenHiber
 ## Requirements
 
 - GNOME Shell 48 to 51 on Wayland
-- systemd-logind
+- systemd
 - UPower
 - polkit, for hibernate after sleep
 

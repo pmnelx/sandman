@@ -46,6 +46,38 @@
       <summary>Saved AC sleep type</summary>
       <description>The system sleep-inactive-ac-type value saved before Sandman took over.</description>
     </key>
+    <key name="saved-sleep-battery-timeout" type="i">
+      <range min="0" max="604800"/>
+      <default>0</default>
+      <summary>Saved battery sleep timeout</summary>
+      <description>The system sleep-inactive-battery-timeout value when Sandman last restored the saved battery sleep type.</description>
+    </key>
+    <key name="saved-sleep-ac-timeout" type="i">
+      <range min="0" max="604800"/>
+      <default>0</default>
+      <summary>Saved AC sleep timeout</summary>
+      <description>The system sleep-inactive-ac-timeout value when Sandman last restored the saved AC sleep type.</description>
+    </key>
+    <key name="restored-sleep-battery-type" type="s">
+      <default>''</default>
+      <summary>Restored battery sleep type</summary>
+      <description>The system sleep-inactive-battery-type value Sandman restored on disable. Empty when nothing was restored.</description>
+    </key>
+    <key name="restored-sleep-battery-timeout" type="i">
+      <default>0</default>
+      <summary>Restored battery sleep timeout</summary>
+      <description>The system sleep-inactive-battery-timeout value when Sandman restored the battery sleep type. A re-enable adopts the system setting only if the pair has changed since.</description>
+    </key>
+    <key name="restored-sleep-ac-type" type="s">
+      <default>''</default>
+      <summary>Restored AC sleep type</summary>
+      <description>The system sleep-inactive-ac-type value Sandman restored on disable. Empty when nothing was restored.</description>
+    </key>
+    <key name="restored-sleep-ac-timeout" type="i">
+      <default>0</default>
+      <summary>Restored AC sleep timeout</summary>
+      <description>The system sleep-inactive-ac-timeout value when Sandman restored the AC sleep type. A re-enable adopts the system setting only if the pair has changed since.</description>
+    </key>
     <key name="adopted" type="b">
       <default>false</default>
       <summary>Settings adopted</summary>

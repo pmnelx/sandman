@@ -140,6 +140,11 @@ Sandman owns automatic sleep (F3). While enabled it sets both gsd
 and restores them in `disable()`. If the user later sets Automatic Suspend
 in Settings, Sandman adopts that timeout into the matching sleep key and
 sets the type back to `nothing`.
+Re-enable adoption: `disable()` records the gsd type and timeout it left
+(`restored-sleep-*-type`/`-timeout`, timeout also in
+`saved-sleep-*-timeout`), and the next `enable()` adopts the gsd timeout
+where that pair has changed and the type is now `suspend`, so an Automatic
+Suspend set while Sandman was off survives.
 
 Active timeout = battery or AC value by UPower `OnBattery`; re-arm when it
 changes. Timer: `global.backend.get_core_idle_monitor().add_idle_watch(ms,
