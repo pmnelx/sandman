@@ -395,11 +395,11 @@ git commit -m "feat: GnomeSettings wrapper for idle, lock and gsd sleep keys"
 - Produces: `ChoiceSection` (GObject subclass of `PopupMenu.PopupSubMenuMenuItem`):
   - `constructor({title: string, items: Array<{value: any, label: string}>})`
   - `setValue(value: any): void` (DOT on the match, NO_DOT elsewhere; title label becomes `${title}  ${label}`), `setItemSensitive(value, sensitive: boolean)`, `setNote(text: string|null)` (non-reactive dim row under the items, hidden when null), `setWarning(text|null)` (same, `style_class: 'sandman-warning'`)
-  - signal `value-selected` with one `GObject.TYPE_JSOBJECT` param
+  - signal `value-selected` with one `GObject.TYPE_JSOBJECT` param carrying a wrapper object `{value}` (GJS rejects primitive numbers and strings on a JSOBJECT param, verified on gjs 1.88); consumers destructure `(_section, {value}) => ...`
 - Produces: `TimerSection extends ChoiceSection`:
   - `constructor({title, presets: number[], labelFor: (n) => string, seed: number})`; items are presets mapped through `labelFor` plus a trailing `{value: "custom", label: "Custom…"}`
   - `setValue(seconds)` opens the custom row (hours/minutes `St.Entry`, Apply `St.Button`) when `!isPreset(seconds, presets)`, seeded by `customSeed(seconds, seed)`; the Custom item takes the DOT then
-  - Apply emits `value-selected` with `customSeconds(hours, minutes)` only when > 0
+  - Apply emits `value-selected` with `{value: customSeconds(hours, minutes)}` only when the seconds are > 0
   - `setCustomEnabled(enabled: boolean)`
 
 - [ ] **Step 1: Implement `lib/ui/choiceSection.js`**
