@@ -2,9 +2,14 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {GnomeSettings} from './lib/gnomeSettings.js';
+import {HibernateService} from './lib/hibernateService.js';
 import {Indicator} from './lib/indicator.js';
 import {KeepAwake} from './lib/keepAwake.js';
+import {hibernatePresets} from './lib/model.js';
 import {SleepService} from './lib/sleepService.js';
+
+const HIBERNATE_UNAVAILABLE = 'Suspend then hibernate is not available on this computer. ';
+const HIBERNATE_AUTH_NOTE = 'Changing this delay requires administrator authorization.';
 
 export default class SandmanExtension extends Extension {
     enable() {
@@ -13,6 +18,7 @@ export default class SandmanExtension extends Extension {
         this._gnome = new GnomeSettings();
         this._sleep = new SleepService({settings: this._settings, gnome: this._gnome});
         this._sleep.enable();
+        this._hibernate = new HibernateService(this._settings);
         this._keepAwake = new KeepAwake(this._settings);
 
         this._indicator = new Indicator({path: this.path});
@@ -34,6 +40,7 @@ export default class SandmanExtension extends Extension {
         this._connect(this._sleep, 'changed', () => this._syncSleep());
         this._connect(this._sleep, 'error', (_sleep, message) =>
             this._indicator.setError(message));
+        this._bindHibernate();
         this._refreshWarnings();
 
         this._bindKeepAwake();
@@ -52,6 +59,8 @@ export default class SandmanExtension extends Extension {
         this._indicator = null;
         this._keepAwake?.destroy();
         this._keepAwake = null;
+        this._hibernate?.disable();
+        this._hibernate = null;
         this._sleep?.disable();
         this._sleep = null;
         this._gnome?.destroy();
@@ -77,6 +86,47 @@ export default class SandmanExtension extends Extension {
             section.setValue(getter());
             this._refreshWarnings();
         });
+    }
+
+    // setDelay runs the pkexec helper, so picks resolve asynchronously. The
+    // service queues them; each outcome re-renders from the stored key, which
+    // only changes when the helper succeeded.
+    _bindHibernate() {
+        this._syncHibernate();
+        this._connect(this._indicator.hibernateSection, 'value-selected', (_section, {value}) => {
+            this._hibernate.setDelay(value)
+                .then(() => {
+                    this._indicator?.setError(null);
+                    this._syncHibernate();
+                })
+                .catch(e => {
+                    this._indicator?.setError(e.message);
+                    this._syncHibernate();
+                });
+        });
+        this._connect(this._hibernate, 'changed', () => this._syncHibernate());
+        this._connect(this._hibernate, 'error', (_hibernate, message) =>
+            this._indicator.setError(message));
+        this._hibernate.enable().catch(e =>
+            console.warn(`Sandman: could not check hibernation support: ${e.message}`));
+    }
+
+    _syncHibernate() {
+        if (!this._indicator)
+            return;
+        const {available, diagnosis} = this._hibernate;
+        const delay = this._hibernate.getDelay();
+        const section = this._indicator.hibernateSection;
+        // Custom first: setValue opens the custom row only while enabled.
+        section.setCustomEnabled(available);
+        for (const v of hibernatePresets)
+            section.setItemSensitive(v, available || v === 0);
+        section.setValue(delay);
+        if (!available)
+            section.setNote(HIBERNATE_UNAVAILABLE + diagnosis);
+        else
+            section.setNote(delay > 0 ? HIBERNATE_AUTH_NOTE : null);
+        this._refreshWarnings();
     }
 
     _bindKeepAwake() {

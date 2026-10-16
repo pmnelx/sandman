@@ -22,24 +22,25 @@ Each setting offers presets, Off, and a custom hours-and-minutes timeout. Omarch
 ## Install
 
 ```sh
-omarchy plugin add https://github.com/lgse/sandman.git --enable
+./install.sh
 ```
 
-Install the privileged helper from the user-owned plugin checkout, then
-restart the shell if it is already running:
+Log out and back in (required on Wayland), then enable the extension:
 
 ```sh
-sudo install -D -o root -g root -m 0755 \
-  ~/.config/omarchy/plugins/lgse.sandman/sandman-configure-hibernate \
-  /usr/local/libexec/sandman-configure-hibernate
-omarchy restart shell
+gnome-extensions enable sandman@pmnelx.github.io
 ```
 
-If needed, add it to the bar explicitly:
+**Hibernate after sleep** changes systemd's system-wide hibernate delay, so
+it needs a privileged helper and its polkit policy:
 
 ```sh
-omarchy bar plugin add lgse.sandman --section right
+./install.sh --system
 ```
+
+This installs `/usr/local/libexec/sandman-configure-hibernate` and the
+`io.github.pmnelx.sandman.configure-hibernate` polkit action. Changing the
+delay then asks for administrator authorization.
 
 ## Usage
 
