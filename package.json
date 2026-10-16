@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Keep awake, lid close, screen off, lock, sleep and hibernate from the GNOME top bar.",
   "scripts": {
-    "test": "node --test && python3 -m unittest discover -s test -p 'test_*.py'"
+    "test": "node --test && python3 -m unittest discover -s test -p 'test_*.py'",
+    "pack": "gnome-extensions pack --force --extra-source=lib --extra-source=icons --extra-source=LICENSE"
   },
   "license": "MIT"
 }

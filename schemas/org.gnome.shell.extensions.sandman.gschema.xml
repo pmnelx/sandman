@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.sandman" path="/org/gnome/shell/extensions/sandman/">
+    <key name="sleep-battery-timeout" type="i">
+      <range min="0" max="604800"/>
+      <default>0</default>
+      <summary>Sleep timeout on battery</summary>
+      <description>Seconds of inactivity before suspending on battery power. 0 means never.</description>
+    </key>
+    <key name="sleep-ac-timeout" type="i">
+      <range min="0" max="604800"/>
+      <default>0</default>
+      <summary>Sleep timeout on AC power</summary>
+      <description>Seconds of inactivity before suspending on AC power. 0 means never.</description>
+    </key>
+    <key name="hibernate-delay" type="i">
+      <range min="0" max="604800"/>
+      <default>0</default>
+      <summary>Hibernate delay after sleep</summary>
+      <description>Seconds spent suspended before hibernating. 0 means never.</description>
+    </key>
+    <key name="lid-action" type="s">
+      <choices>
+        <choice value="system"/>
+        <choice value="nothing"/>
+        <choice value="display"/>
+        <choice value="sleep"/>
+        <choice value="hibernate"/>
+      </choices>
+      <default>'system'</default>
+      <summary>Lid close action</summary>
+      <description>What happens when the lid closes. system leaves the system setting unchanged.</description>
+    </key>
+    <key name="keep-awake" type="b">
+      <default>false</default>
+      <summary>Keep awake</summary>
+      <description>Prevent idle sleep and screen blanking while enabled.</description>
+    </key>
+    <key name="saved-sleep-battery-type" type="s">
+      <default>''</default>
+      <summary>Saved battery sleep type</summary>
+      <description>The system sleep-inactive-battery-type value saved before Sandman took over.</description>
+    </key>
+    <key name="saved-sleep-ac-type" type="s">
+      <default>''</default>
+      <summary>Saved AC sleep type</summary>
+      <description>The system sleep-inactive-ac-type value saved before Sandman took over.</description>
+    </key>
+    <key name="adopted" type="b">
+      <default>false</default>
+      <summary>Settings adopted</summary>
+      <description>Whether Sandman has adopted the system power settings.</description>
+    </key>
+  </schema>
+</schemalist>

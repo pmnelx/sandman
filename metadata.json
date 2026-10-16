@@ -1,0 +1,10 @@
+{
+  "uuid": "sandman@pmnelx.github.io",
+  "name": "Sandman",
+  "description": "Keep awake, lid close, screen off, lock, sleep and hibernate from the top bar.",
+  "shell-version": ["48", "49", "50", "51"],
+  "session-modes": ["user", "unlock-dialog"],
+  "settings-schema": "org.gnome.shell.extensions.sandman",
+  "url": "https://github.com/pmnelx/sandman",
+  "version-name": "0.1.0"
+}
