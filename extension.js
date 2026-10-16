@@ -3,12 +3,14 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {GnomeSettings} from './lib/gnomeSettings.js';
 import {Indicator} from './lib/indicator.js';
+import {KeepAwake} from './lib/keepAwake.js';
 
 export default class SandmanExtension extends Extension {
     enable() {
         this._handlers = [];
         this._settings = this.getSettings();
         this._gnome = new GnomeSettings();
+        this._keepAwake = new KeepAwake(this._settings);
 
         this._indicator = new Indicator({path: this.path});
         Main.panel.addToStatusArea(this.uuid, this._indicator);
@@ -22,6 +24,9 @@ export default class SandmanExtension extends Extension {
         this._connect(this._gnome, 'changed', () => this._syncGnome());
         this._refreshWarnings();
 
+        this._bindKeepAwake();
+        this._keepAwake.restore();
+
         this._updateVisibility();
         this._connect(Main.sessionMode, 'updated', () => this._updateVisibility());
     }
@@ -33,6 +38,8 @@ export default class SandmanExtension extends Extension {
 
         this._indicator?.destroy();
         this._indicator = null;
+        this._keepAwake?.destroy();
+        this._keepAwake = null;
         this._gnome?.destroy();
         this._gnome = null;
         this._settings = null;
@@ -55,6 +62,25 @@ export default class SandmanExtension extends Extension {
             }
             section.setValue(getter());
             this._refreshWarnings();
+        });
+    }
+
+    _bindKeepAwake() {
+        const item = this._indicator.keepAwakeSwitch;
+        item.setToggleState(this._keepAwake.active);
+        this._indicator.setKeepAwakeBadge(this._keepAwake.active);
+
+        this._connect(item, 'toggled', (_item, state) => {
+            this._keepAwake.setActive(state)
+                .then(() => this._indicator?.setError(null))
+                .catch(e => {
+                    this._indicator?.setError(e.message);
+                    this._indicator?.keepAwakeSwitch.setToggleState(this._keepAwake?.active ?? false);
+                });
+        });
+        this._connect(this._keepAwake, 'changed', () => {
+            item.setToggleState(this._keepAwake.active);
+            this._indicator.setKeepAwakeBadge(this._keepAwake.active);
         });
     }
 
