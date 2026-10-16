@@ -9,7 +9,7 @@ mkdir -p "${DEST}"
 for d in lib icons schemas; do
     rm -rf "${DEST:?}/${d}"
 done
-cp -r "${SRC}/extension.js" "${SRC}/metadata.json" "${SRC}/lib" "${SRC}/icons" "${SRC}/schemas" "${DEST}/"
+cp -r "${SRC}/extension.js" "${SRC}/metadata.json" "${SRC}/stylesheet.css" "${SRC}/lib" "${SRC}/icons" "${SRC}/schemas" "${DEST}/"
 glib-compile-schemas "${DEST}/schemas"
 
 if [[ "${1:-}" == "--system" ]]; then
