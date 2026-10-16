@@ -5,6 +5,7 @@ import {GnomeSettings} from './lib/gnomeSettings.js';
 import {HibernateService} from './lib/hibernateService.js';
 import {Indicator} from './lib/indicator.js';
 import {KeepAwake} from './lib/keepAwake.js';
+import {LidService} from './lib/lidService.js';
 import {hibernatePresets} from './lib/model.js';
 import {SleepService} from './lib/sleepService.js';
 
@@ -20,6 +21,11 @@ export default class SandmanExtension extends Extension {
         this._sleep.enable();
         this._hibernate = new HibernateService(this._settings);
         this._keepAwake = new KeepAwake(this._settings);
+        this._lid = new LidService({
+            settings: this._settings,
+            keepAwake: this._keepAwake,
+            hibernate: this._hibernate,
+        });
 
         this._indicator = new Indicator({path: this.path});
         Main.panel.addToStatusArea(this.uuid, this._indicator);
@@ -46,6 +52,8 @@ export default class SandmanExtension extends Extension {
         this._bindKeepAwake();
         this._keepAwake.restore();
 
+        this._bindLid();
+
         this._updateVisibility();
         this._connect(Main.sessionMode, 'updated', () => this._updateVisibility());
     }
@@ -57,10 +65,12 @@ export default class SandmanExtension extends Extension {
 
         this._indicator?.destroy();
         this._indicator = null;
-        this._keepAwake?.destroy();
-        this._keepAwake = null;
+        this._lid?.disable();
+        this._lid = null;
         this._hibernate?.disable();
         this._hibernate = null;
+        this._keepAwake?.destroy();
+        this._keepAwake = null;
         this._sleep?.disable();
         this._sleep = null;
         this._gnome?.destroy();
@@ -127,6 +137,38 @@ export default class SandmanExtension extends Extension {
         else
             section.setNote(delay > 0 ? HIBERNATE_AUTH_NOTE : null);
         this._refreshWarnings();
+    }
+
+    // The section stays hidden until the service finds a lid. Hibernate is
+    // pickable only when logind can hibernate.
+    _bindLid() {
+        this._syncLid();
+        this._connect(this._indicator.lidSection, 'value-selected', (_section, {value}) => {
+            this._lid.setAction(value)
+                .then(() => {
+                    this._indicator?.setError(null);
+                    this._syncLid();
+                })
+                .catch(e => {
+                    this._indicator?.setError(e.message);
+                    this._syncLid();
+                });
+        });
+        this._connect(this._lid, 'changed', () => this._syncLid());
+        this._connect(this._hibernate, 'changed', () => this._syncLid());
+        this._connect(this._lid, 'error', (_lid, message) =>
+            this._indicator.setError(message));
+        this._lid.enable().catch(e =>
+            console.warn(`Sandman: could not watch the lid: ${e.message}`));
+    }
+
+    _syncLid() {
+        if (!this._indicator)
+            return;
+        const section = this._indicator.lidSection;
+        section.visible = this._lid.lidPresent;
+        section.setValue(this._lid.getAction());
+        section.setItemSensitive('hibernate', this._hibernate.canHibernate);
     }
 
     _bindKeepAwake() {
