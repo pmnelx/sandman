@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+schemas/gschemas.compiled
+*.shell-extension.zip
+.superpowers/

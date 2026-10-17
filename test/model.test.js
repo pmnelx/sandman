@@ -1,31 +1,12 @@
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const vm = require("node:vm");
-const test = require("node:test");
-
-const source = fs.readFileSync(new URL("../Model.js", `file://${__dirname}/`), "utf8")
-  .replace(/^\.pragma library\s*/m, "");
-const model = {};
-vm.createContext(model);
-vm.runInContext(source, model);
-
-test("parseConfig normalizes persisted values", () => {
-  assert.deepEqual(
-    JSON.parse(JSON.stringify(model.parseConfig('{"screensaver":600,"display":120,"lock":900,"sleep":3600}'))),
-    { screensaver: 600, display: 120, lock: 900, sleep: 3600, hibernate: 0, lid: "system" }
-  );
-  assert.deepEqual(
-    JSON.parse(JSON.stringify(model.parseConfig("broken"))),
-    { screensaver: 150, display: 0, lock: 300, sleep: 0, hibernate: 0, lid: "system" }
-  );
-});
+import assert from "node:assert/strict";
+import test from "node:test";
+import * as model from "../lib/model.js";
 
 test("lid actions are normalized and labelled", () => {
   assert.equal(model.normalizedLidAction("display"), "display");
   assert.equal(model.normalizedLidAction("invalid"), "system");
   assert.equal(model.lidActionLabel("nothing"), "Do nothing");
   assert.equal(model.lidActionLabel("system"), "System default");
-  assert.equal(model.parseConfig('{"lid":"hibernate"}').lid, "hibernate");
 });
 
 test("formatDuration produces compact labels", () => {
@@ -58,36 +39,54 @@ test("normalizedSeconds clamps persisted values below the 32-bit overflow", () =
   assert.ok(model.maxTimeoutSeconds * 1000 < 2147483647);
 });
 
-test("parseConfig bounds oversized persisted values", () => {
-  const parsed = model.parseConfig('{"screensaver":150,"lock":300,"sleep":2000000000}');
-  assert.equal(parsed.sleep, model.maxTimeoutSeconds);
-  assert.ok(parsed.sleep * 1000 < 2147483647);
+test("lock values round-trip through enabled/delay", () => {
+  assert.equal(model.lockValue(false, 300), model.LOCK_OFF);
+  assert.equal(model.lockValue(true, 0), 0);
+  assert.deepEqual(model.lockParts(model.LOCK_OFF), { enabled: false, delay: 0 });
+  assert.deepEqual(model.lockParts(900), { enabled: true, delay: 900 });
+  assert.equal(model.formatLockValue(model.LOCK_OFF), "Off");
+  assert.equal(model.formatLockValue(0), "Immediately");
+  assert.equal(model.formatLockValue(1800), "30 min");
 });
 
-test("statusSummary includes all stages", () => {
-  assert.equal(
-    model.statusSummary(300, 120, 600, 1800, 7200),
-    "Screen 5 min · Displays 2 min · Lock 10 min · Sleep 30 min · Hibernate +2 hours"
-  );
+test("custom entry helpers", () => {
+  assert.deepEqual(model.customParts(90), { hours: 0, minutes: 2 });
+  assert.deepEqual(model.customParts(3660), { hours: 1, minutes: 1 });
+  assert.equal(model.customSeconds(1, 30), 5400);
+  assert.equal(model.customSeconds(99, 99), (24 * 60 + 59) * 60);
+  assert.equal(model.customSeconds("abc", ""), 0);
+  assert.deepEqual(model.customSeed(0, 900), { hours: 0, minutes: 15 });
+  assert.deepEqual(model.customSeed(120, 900), { hours: 0, minutes: 2 });
+  assert.equal(model.isPreset(900, model.sleepPresets), true);
+  assert.equal(model.isPreset(150, model.sleepPresets), false);
 });
 
-test("parseConfig normalizes the hibernate-after-sleep delay", () => {
-  assert.equal(model.parseConfig('{"hibernate":7200}').hibernate, 7200);
-  assert.equal(model.parseConfig('{"hibernate":-1}').hibernate, 0);
+test("adoption takes gsd timeouts only when gsd would suspend", () => {
+  assert.equal(model.adoptedSleepTimeout("suspend", 1200), 1200);
+  assert.equal(model.adoptedSleepTimeout("nothing", 3600), 0);
+  assert.equal(model.adoptedSleepTimeout("suspend", 2000000000), model.maxTimeoutSeconds);
 });
 
-test("shouldCancelCycle only treats a real user return as a cancel", () => {
-  const running = {
-    cycleRunning: true, idle: false, sessionLocked: false,
-    screensaverWindows: 0, graceRunning: false
-  };
-  assert.equal(model.shouldCancelCycle(running), true);
-  assert.equal(model.shouldCancelCycle({ ...running, sessionLocked: true }), false);
-  assert.equal(model.shouldCancelCycle({ ...running, screensaverWindows: 1 }), false);
-  assert.equal(model.shouldCancelCycle({ ...running, graceRunning: true }), false);
-  assert.equal(model.shouldCancelCycle({ ...running, screensaverWindows: 0, graceRunning: true }), false);
-  assert.equal(model.shouldCancelCycle({ ...running, sessionLocked: true, screensaverWindows: 0 }), false);
-  assert.equal(model.shouldCancelCycle({ ...running, idle: true }), false);
-  assert.equal(model.shouldCancelCycle({ ...running, cycleRunning: false }), false);
-  assert.equal(model.shouldCancelCycle(undefined), false);
+test("active sleep timeout follows the power source, defaulting to plugged in", () => {
+  assert.equal(model.pickSleepTimeout(true, 1200, 3600), 1200);
+  assert.equal(model.pickSleepTimeout(false, 1200, 3600), 3600);
+  assert.equal(model.pickSleepTimeout(undefined, 1200, 3600), 3600);
+});
+
+test("sleepMethod applies the eGPU rule", () => {
+  assert.equal(model.sleepMethod(3600, false), "SuspendThenHibernate");
+  assert.equal(model.sleepMethod(3600, true), "Suspend");
+  assert.equal(model.sleepMethod(0, false), "Suspend");
+});
+
+test("warnings mirror the upstream panel", () => {
+  assert.deepEqual(model.warnings({ screenOff: 0, lock: 300, sleepBattery: 0, sleepAc: 0, hibernate: 0 }),
+    ["Lock cannot fire while screen off is Off."]);
+  assert.deepEqual(model.warnings({ screenOff: 600, lock: model.LOCK_OFF, sleepBattery: 300, sleepAc: 0, hibernate: 0 }),
+    ["Sleep on battery is set before the screen turns off."]);
+  assert.deepEqual(model.warnings({ screenOff: 600, lock: 0, sleepBattery: 0, sleepAc: 300, hibernate: 0 }),
+    ["Sleep plugged in is set before the screen turns off."]);
+  assert.deepEqual(model.warnings({ screenOff: 600, lock: 0, sleepBattery: 0, sleepAc: 0, hibernate: 3600 }),
+    ["Enable Sleep for automatic hibernation after inactivity."]);
+  assert.deepEqual(model.warnings({ screenOff: 600, lock: 0, sleepBattery: 900, sleepAc: 1800, hibernate: 3600 }), []);
 });

@@ -1,6 +1,8 @@
 import argparse
+import contextlib
 import importlib.machinery
 import importlib.util
+import io
 import sys
 import tempfile
 import unittest
@@ -92,7 +94,8 @@ class ConfigureHibernateMainTest(unittest.TestCase):
         self.assertFalse(self.config.exists())
 
     def test_out_of_range_seconds_exits_without_writing(self):
-        with self.assertRaises(SystemExit) as context:
+        with self.assertRaises(SystemExit) as context, \
+                contextlib.redirect_stderr(io.StringIO()):
             self.run_main("configure-hibernate", str(self.helper.MAX_TIMEOUT + 1))
         self.assertNotEqual(context.exception.code, 0)
         self.assertFalse(self.config.exists())
