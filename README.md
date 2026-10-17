@@ -3,7 +3,7 @@
 A GNOME Shell extension that puts keep awake, lid close, screen off, lock, sleep and hibernate in one top bar menu. It works with GNOME's own settings where they exist and adds what GNOME Settings does not offer, such as a lid close action and hibernate after sleep.
 
 <p align="center">
-  <img src="preview-dark.png" alt="Sandman popup in dark mode, hovering the appearance toggle" width="46%">
+  <img src="preview-dark.png" alt="Sandman popup in dark mode" width="46%">
   &nbsp;&nbsp;
   <img src="preview-light.png" alt="Sandman popup in light mode" width="46%">
 </p>
