@@ -69,7 +69,7 @@ For any action other than System default, Sandman holds a logind `handle-lid-swi
 - **Display off** turns the built-in panel off when no external monitor is attached. With one attached, GNOME already does this.
 - **Sleep** and **Hibernate** act even when docked, because you chose them explicitly. Use Do nothing or Display off for clamshell use.
 - **Sleep** follows the same rule as the sleep timer: suspend then hibernate when Hibernate after sleep is set, but plain suspend while a removable GPU is attached.
-- **Keep awake** suppresses Sandman's Sleep and Hibernate lid actions. It does not affect System default, because logind ignores session inhibitors on lid close.
+- **Lid actions always run**, even while keep awake is on, because closing the lid is an explicit request. Under System default, logind also ignores session inhibitors on lid close.
 - With System default selected, GNOME itself blocks lid-close suspend while an external monitor is attached.
 
 ## Hibernate prerequisites

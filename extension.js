@@ -28,7 +28,6 @@ export default class SandmanExtension extends Extension {
             this._keepAwake = new KeepAwake(this._settings);
             this._lid = new LidService({
                 settings: this._settings,
-                keepAwake: this._keepAwake,
                 hibernate: this._hibernate,
             });
 

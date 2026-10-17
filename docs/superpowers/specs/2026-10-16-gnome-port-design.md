@@ -185,7 +185,7 @@ Ported from upstream `LidService.qml` using D-Bus:
   it, F2). Otherwise Mutter power-save OFF on close, ON on open. Builder
   verifies Mutter's behaviour with our inhibitor held first.
 - Sleep: `SuspendThenHibernate` when hibernate > 0 and no eGPU, else
-  `Suspend`. Hibernate: `Hibernate`. Both skipped while keep awake is on.
+  `Suspend`. Hibernate: `Hibernate`. Lid actions run regardless of keep awake.
 - Changing the action while closed applies it immediately.
 
 ### 4.5 Repository after the port
@@ -224,7 +224,7 @@ README.md                    rewritten for GNOME
   while enabled, restored on disable, values adopted on first run.
 - Inhibited sleep waits for inhibitor release, then sleeps if already
   past the timeout.
-- Keep awake suppresses Sandman-managed lid Sleep/Hibernate only.
+- Sandman-managed lid actions always run, even while keep awake is on.
 - One screen-off control replaces upstream's screensaver + displays-off.
 - Custom entry inline in the popup; no prefs window.
 - UUID `sandman@pmnelx.github.io`; polkit action id as above.
