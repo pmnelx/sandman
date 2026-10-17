@@ -27,6 +27,26 @@
     color: -st-accent-fg-color;
 }
 
+/* Keep awake: the label and switch share one button. */
+.sandman-switch-button {
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.sandman-switch-button:hover,
+.sandman-switch-button:focus {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Appearance: three icon chips side by side. */
+.sandman-segment {
+    spacing: 0;
+}
+
+.button.sandman-icon-chip {
+    padding: 4px 8px;
+}
+
 /* St already dims :insensitive text; this only adds a light fade. */
 .sandman-chip-insensitive {
     opacity: 0.7;

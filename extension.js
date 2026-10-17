@@ -1,6 +1,7 @@
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
+import {Appearance} from './lib/appearance.js';
 import {GnomeSettings} from './lib/gnomeSettings.js';
 import {HibernateService} from './lib/hibernateService.js';
 import {Indicator} from './lib/indicator.js';
@@ -30,6 +31,7 @@ export default class SandmanExtension extends Extension {
                 settings: this._settings,
                 hibernate: this._hibernate,
             });
+            this._appearance = new Appearance();
 
             this._indicator = new Indicator({path: this.path});
             Main.panel.addToStatusArea(this.uuid, this._indicator);
@@ -55,6 +57,8 @@ export default class SandmanExtension extends Extension {
 
             this._bindKeepAwake();
             this._keepAwake.restore();
+
+            this._bindAppearance();
 
             this._bindLid();
 
@@ -84,6 +88,8 @@ export default class SandmanExtension extends Extension {
         this._hibernate = null;
         this._keepAwake?.destroy();
         this._keepAwake = null;
+        this._appearance?.destroy();
+        this._appearance = null;
         this._sleep?.disable();
         this._sleep = null;
         this._gnome?.destroy();
@@ -224,8 +230,9 @@ export default class SandmanExtension extends Extension {
         });
     }
 
-    // setToggleState emits "toggled"; the guard keeps programmatic updates
-    // from re-entering the toggled handler as if the user had clicked.
+    // The top row's setToggleState does not emit "toggled"; the guard is only
+    // defensive, keeping programmatic updates from re-entering the toggled
+    // handler as if the user had clicked.
     _setSwitch(state) {
         if (!this._indicator)
             return;
@@ -235,6 +242,24 @@ export default class SandmanExtension extends Extension {
         } finally {
             this._syncingSwitch = false;
         }
+    }
+
+    // Synchronous: picks are written straight to GSettings, and the chips
+    // re-render from the stored value whatever the outcome.
+    _bindAppearance() {
+        const topRow = this._indicator.topRow;
+        topRow.setScheme(this._appearance.scheme);
+        this._connect(topRow, 'scheme-selected', (_row, {value}) => {
+            try {
+                this._appearance.setScheme(value);
+                this._indicator.setError(null);
+            } catch (e) {
+                this._indicator.setError(e.message);
+            }
+            topRow.setScheme(this._appearance.scheme);
+        });
+        this._connect(this._appearance, 'changed', () =>
+            topRow.setScheme(this._appearance.scheme));
     }
 
     _syncGnome() {

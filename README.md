@@ -6,8 +6,9 @@ A GNOME Shell extension that puts keep awake, lid close, screen off, lock, sleep
 
 ## Controls
 
-In popup order:
+In popup order. Keep awake and Appearance share the top row.
 
+- **Appearance**: System, Light or Dark, written to GNOME's `color-scheme` setting (System is GNOME's default, which most apps render as light).
 - **Keep awake**: a switch. While on, Sandman holds a session inhibitor for idle and suspend.
 - **Lid close**: laptops only. System default, Do nothing, Display off, Sleep or Hibernate.
 - **Screen off**: how long until the screen turns off.
