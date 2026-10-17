@@ -7,19 +7,29 @@
     padding: 4px 0;
 }
 
-.sandman-chip {
+.button.sandman-chip {
     margin: 2px;
-    padding: 4px 8px;
+    padding: 4px 6px;
 }
 
-/* The shell theme's .button:checked is only a slightly lighter grey. */
-.sandman-chip:checked {
+/* The shell theme's .button:checked is only a slightly lighter grey, and its
+   :checked:hover, :checked:active and :focus:hover rules are (0,3,0), so these
+   selectors are compound to win on hover and focus too. */
+.button.sandman-chip:checked,
+.button.sandman-chip:checked:focus {
     background-color: -st-accent-color;
     color: -st-accent-fg-color;
 }
 
+.button.sandman-chip:checked:hover,
+.button.sandman-chip:checked:active {
+    background-color: st-lighten(-st-accent-color, 4%);
+    color: -st-accent-fg-color;
+}
+
+/* St already dims :insensitive text; this only adds a light fade. */
 .sandman-chip-insensitive {
-    opacity: 0.4;
+    opacity: 0.7;
 }
 
 .sandman-status-button {
