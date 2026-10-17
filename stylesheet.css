@@ -1,5 +1,5 @@
 .sandman-menu {
-    width: 26em;
+    width: 32em;
 }
 
 .sandman-section-title {
@@ -10,6 +10,7 @@
 .button.sandman-chip {
     margin: 2px;
     padding: 4px 6px;
+    font-weight: normal;
 }
 
 /* The shell theme's .button:checked is only a slightly lighter grey, and its
