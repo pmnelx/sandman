@@ -1,3 +1,49 @@
+.sandman-menu {
+    width: 26em;
+}
+
+.sandman-section-title {
+    font-weight: bold;
+    padding: 4px 0;
+}
+
+.sandman-chip {
+    margin: 2px;
+    padding: 4px 8px;
+}
+
+/* The shell theme's .button:checked is only a slightly lighter grey. */
+.sandman-chip:checked {
+    background-color: -st-accent-color;
+    color: -st-accent-fg-color;
+}
+
+.sandman-chip-insensitive {
+    opacity: 0.4;
+}
+
+.sandman-status-button {
+    padding: 2px;
+    border-radius: 99px;
+}
+
+.sandman-status-warning {
+    color: #f66151;
+}
+
+.sandman-status-note {
+    color: #9a9996;
+}
+
+.sandman-tooltip {
+    background-color: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 10px;
+    max-width: 24em;
+    font-size: 0.95em;
+}
+
 .sandman-warning {
     color: #f66151;
 }
